@@ -1,4 +1,3 @@
-// service/copy_service.go
 package service
 
 import (
@@ -6,7 +5,11 @@ import (
 	"filesys/dao"
 	"filesys/model"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type copyService struct{}
@@ -159,4 +162,51 @@ func copyFolderContents(tx *dao.Query, srcFolderID, destFolderID int32) error {
 	}
 
 	return nil
+}
+
+// 更新存储引用
+func updateStoreRef(tx *dao.Query, storeKey string, delta int) error {
+	storeRef, err := tx.StoreRef.Where(tx.StoreRef.StoreKey.Eq(storeKey)).First()
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			if delta > 0 {
+				// 创建新的存储引用记录
+				newStoreRef := &model.StoreRef{
+					StoreKey: storeKey,
+					RefCount: int32(delta),
+				}
+				return tx.StoreRef.Create(newStoreRef)
+			}
+			return nil
+		}
+		return err
+	}
+
+	newRefCount := storeRef.RefCount + int32(delta)
+	if newRefCount <= 0 {
+		// 删除存储引用记录
+		_, err := tx.StoreRef.Where(tx.StoreRef.StoreKey.Eq(storeKey)).Delete()
+		if err != nil {
+			return err
+		}
+
+		// 删除磁盘上的文件
+		path := getFilePath(storeKey)
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	} else {
+		// 更新存储引用记录
+		_, err := tx.StoreRef.Where(tx.StoreRef.StoreKey.Eq(storeKey)).Update(tx.StoreRef.RefCount, newRefCount)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// 获取文件路径
+func getFilePath(storeKey string) string {
+	return filepath.Join("data", storeKey[:2], storeKey)
 }

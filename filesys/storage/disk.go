@@ -7,12 +7,6 @@ import (
 	"path/filepath"
 )
 
-// GenerateStoreKey 生成存储键（内容哈希）
-func GenerateStoreKey(content []byte) string {
-	hash := sha256.Sum256(content)
-	return hex.EncodeToString(hash[:])
-}
-
 // SaveFile 保存文件到磁盘
 func SaveFile(content []byte) (string, error) {
 	storeKey := GenerateStoreKey(content)
@@ -36,21 +30,13 @@ func SaveFile(content []byte) (string, error) {
 	return storeKey, nil
 }
 
-// ReadFile 读取文件内容
-func ReadFile(storeKey string) ([]byte, error) {
-	path := filepath.Join("data", storeKey[:2], storeKey)
-	return os.ReadFile(path)
+// GenerateStoreKey 生成文件存储键
+func GenerateStoreKey(content []byte) string {
+	hash := sha256.Sum256(content)
+	return hex.EncodeToString(hash[:])
 }
 
-// DeleteFile 删除文件
-func DeleteFile(storeKey string) error {
-	path := filepath.Join("data", storeKey[:2], storeKey)
-	return os.Remove(path)
-}
-
-// FileExists 检查文件是否存在
-func FileExists(storeKey string) bool {
-	path := filepath.Join("data", storeKey[:2], storeKey)
-	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
+// GetFilePath 获取文件路径
+func GetFilePath(storeKey string) string {
+	return filepath.Join("data", storeKey[:2], storeKey)
 }

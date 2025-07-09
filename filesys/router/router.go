@@ -1,8 +1,7 @@
 package router
 
 import (
-	"filesys/endpoint"
-	"filesys/middleware"
+	"filesys/controller"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,42 +9,28 @@ import (
 func InitRouter() *gin.Engine {
 	r := gin.Default()
 
-	// 添加审计日志中间件
-	r.Use(middleware.AuditLoggerMiddleware())
+	// 登录接口
+	r.POST("/login", controller.Login)
 
-	// 静态文件服务（用于文件下载）
-	r.Static("/data", "./data")
+	// 管理接口
+	adminGroup := r.Group("/api/user")
+	adminGroup.Use(controller.AdminAuthMiddleware())
+	adminGroup.POST("", controller.CreateUser)
 
-	// 登录路由
-	r.POST("/login", endpoint.Login)
-
-	// 需要认证的路由组
-	auth := r.Group("/api", middleware.AuthMiddleware())
-	{
-		// 用户管理
-		auth.POST("/user", endpoint.CreateUser)
-
-		// 文件操作路由组（需要文件权限）
-		fileGroup := auth.Group("/file", middleware.FilePermissionMiddleware())
-		{
-			// 文件夹操作
-			fileGroup.POST("/:file_id/new", endpoint.CreateFolder)
-
-			// 文件操作
-			fileGroup.POST("/:file_id/upload", endpoint.UploadFile)
-			fileGroup.POST("/:file_id/update", endpoint.UpdateFile)
-			fileGroup.DELETE("/:file_id", endpoint.DeleteFile)
-			fileGroup.POST("/:file_id/copy", endpoint.CopyFile)
-			fileGroup.POST("/:file_id/move", endpoint.MoveFile)
-			fileGroup.POST("/:file_id/rename", endpoint.RenameFile)
-
-			// 文件查询
-			fileGroup.GET("/:file_id", endpoint.GetFileInfo)
-			fileGroup.GET("/:file_id/list", endpoint.ListFiles)
-			fileGroup.GET("/:file_id/content", endpoint.DownloadFile)
-			fileGroup.GET("/:file_id/version/:ver_num/content", endpoint.DownloadVersion)
-		}
-	}
+	// 文件接口
+	fileGroup := r.Group("/api/file")
+	fileGroup.Use(controller.SessionAuthMiddleware())
+	fileGroup.POST("/:file_id/new", controller.CreateFolder)
+	fileGroup.POST("/:file_id/upload", controller.UploadFile)
+	fileGroup.POST("/:file_id/update", controller.UpdateFile)
+	fileGroup.DELETE("/:file_id", controller.DeleteFile)
+	fileGroup.POST("/:file_id/copy", controller.CopyFile)
+	fileGroup.POST("/:file_id/move", controller.MoveFile)
+	fileGroup.POST("/:file_id/rename", controller.RenameFile)
+	fileGroup.GET("/:file_id", controller.GetFile)
+	fileGroup.GET("/:file_id/list", controller.ListFiles)
+	fileGroup.GET("/:file_id/content", controller.DownloadFile)
+	fileGroup.GET("/:file_id/version/:ver_num/content", controller.DownloadHistoricalVersion)
 
 	return r
 }
