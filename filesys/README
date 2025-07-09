@@ -1,0 +1,36 @@
+功能概述
+1. 实现一个简易的用户文件系统
+2. 每个用户拥有一个文件树，节点类型有文件和文件夹
+3. 每个文件或者文件夹都有一个唯一id，根目录的文件夹id是0
+4. 实现文件基本操作接口
+5. 系统默认自带一个管理账号admin，只有此账号能创建其它用户
+6. 一个文件夹下文件不能重名，文件和文件夹也不能重名，如果重名发生，自动重命名，规则参考windows规则
+7. 文件版本号从1开始递增，当前版本版本号最大
+8. 高级功能：开发客户端，配合服务端用rsync差分算法实现历史版本增量上传（放第二天再考虑）
+9. 文件放在工程根目录的data目录下，考虑磁盘文件清理
+10.  用postman做接口功能测试，能写简单前端页面展示更好
+
+接口描述
+登录接口
+post /login   登录接口，返回sid，管理接口和文件接口都要在cookie里带sid才能访问
+管理接口
+post /api/user 创建用户，只有admin用户可以创建
+文件接口
+post /api/file/{file_id}/new  新建文件夹，file_id为父目录id，返回文件夹基本信息
+post /api/file/{file_id}/upload 上传文件，file_id为父目录id，文件二进制放请求的body里，返回文件基本信息
+post /api/file/{file_id}/update  更新文件，文件二进制放请求的body里，返回文件基本信息
+delete /api/file/{file_id} 删除文件（夹）
+post /api/file/{file_id}/copy
+post /api/file/{file_id}/move
+post /api/file/{file_id}/rename
+get /api/file/{file_id}
+get /api/file/{file_id}/list
+get /api/file/{file_id}/content 文件下载
+get /api/file/{file_id}/version/{ver_num}/content历史版本下载
+
+开源框架
+gin
+gorm
+sqlite "github.com/glebarez/sqlite" //不依赖cgo
+
+数据库工具：heidisql
